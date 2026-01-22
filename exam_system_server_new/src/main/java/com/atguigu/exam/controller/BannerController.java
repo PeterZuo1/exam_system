@@ -3,13 +3,19 @@ package com.atguigu.exam.controller;
 
 import com.atguigu.exam.common.Result;
 import com.atguigu.exam.entity.Banner;
+import com.atguigu.exam.service.BannerService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -17,13 +23,15 @@ import java.util.Map;
  * 轮播图控制器 - 处理轮播图管理相关的HTTP请求
  * 包括图片上传、轮播图的CRUD操作、状态切换等功能
  */
+@Slf4j//日志
 @RestController  // REST控制器，返回JSON数据
 @RequestMapping("/api/banners")  // 轮播图API路径前缀
 @CrossOrigin  // 允许跨域访问
 @Tag(name = "轮播图管理", description = "轮播图相关操作，包括图片上传、轮播图增删改查、状态管理等功能")  // Swagger API分组
 public class BannerController {
 
-    
+    @Autowired
+    private BannerService bannerService;
     /**
      * 上传轮播图图片
      * @param file 图片文件
@@ -45,7 +53,14 @@ public class BannerController {
     @GetMapping("/active")  // 处理GET请求
     @Operation(summary = "获取启用的轮播图", description = "获取状态为启用的轮播图列表，供前台首页展示使用")  // API描述
     public Result<List<Banner>> getActiveBanners() {
-        return Result.success(null);
+        // 创建查询条件
+        LambdaQueryWrapper<Banner> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.orderByAsc(Banner::getSortOrder);
+        queryWrapper.eq(Banner::getIsActive, true);
+        //查询
+        List<Banner> list = bannerService.list(queryWrapper);
+        log.info("查询成功！");
+        return Result.success(list);
     }
     
     /**
@@ -55,7 +70,13 @@ public class BannerController {
     @GetMapping("/list")  // 处理GET请求
     @Operation(summary = "获取所有轮播图", description = "获取所有轮播图列表，包括启用和禁用的，供管理后台使用")  // API描述
     public Result<List<Banner>> getAllBanners() {
-        return Result.success(null);
+        LambdaQueryWrapper<Banner> bannerQueryWrapper = new LambdaQueryWrapper<>();
+        bannerQueryWrapper.orderByAsc(Banner::getSortOrder);
+//        bannerQueryWrapper.eq(Banner::getIsDeleted, 0);
+        List<Banner> list = bannerService.list(bannerQueryWrapper);
+        log.info("获取轮播图列表：{}", list);
+        //返回轮播图列表
+        return Result.success(list);
     }
     
     /**
@@ -66,8 +87,9 @@ public class BannerController {
     @GetMapping("/{id}")  // 处理GET请求
     @Operation(summary = "根据ID获取轮播图", description = "根据轮播图ID获取单个轮播图的详细信息")  // API描述  
     public Result<Banner> getBannerById(@Parameter(description = "轮播图ID") @PathVariable Long id) {
-
-      return Result.error("轮播图不存在");
+        Banner banner = bannerService.getById(id);
+        log.info("获取轮播图详情：{}", banner);
+        return Result.success(banner);
     }
     
     /**
@@ -100,7 +122,9 @@ public class BannerController {
     @DeleteMapping("/delete/{id}")  // 处理DELETE请求
     @Operation(summary = "删除轮播图", description = "根据ID删除指定的轮播图")  // API描述
     public Result<String> deleteBanner(@Parameter(description = "轮播图ID") @PathVariable Long id) {
-        return null;
+        bannerService.removeById(id);
+        log.info("删除轮播图成功！{}",id);
+        return Result.success(null);
     }
     
     /**
@@ -114,6 +138,14 @@ public class BannerController {
     public Result<String> toggleBannerStatus(
             @Parameter(description = "轮播图ID") @PathVariable Long id, 
             @Parameter(description = "是否启用，true为启用，false为禁用") @RequestParam Boolean isActive) {
-        return null;
+        LambdaUpdateWrapper<Banner> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        //更新条件
+        lambdaUpdateWrapper.eq(Banner::getId, id);
+        lambdaUpdateWrapper.set(Banner::getIsActive, isActive);
+        //数据库进行更新字段时间的维护
+        //lambdaUpdateWrapper.set(Banner::getUpdateTime, LocalDateTime.now());
+        bannerService.update(lambdaUpdateWrapper);
+        log.info("切换轮播图状态成功！");
+        return Result.success(null);
     }
 } 
