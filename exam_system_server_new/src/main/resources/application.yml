@@ -1,6 +1,10 @@
 server:
   port: 8080
 spring:
+  servlet:
+    multipart:
+      max-file-size: 5MB #文件大小配置
+      max-request-size: 20MB
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -22,3 +26,8 @@ spring:
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+minio:
+  end-point: http://192.168.111.130:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: exam-system
