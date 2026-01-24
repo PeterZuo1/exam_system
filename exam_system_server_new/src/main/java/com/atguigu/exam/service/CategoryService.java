@@ -11,4 +11,10 @@ public interface CategoryService extends IService<Category> {
     List<Category> getAllCategories();
 
     List<Category> getAllTreeCategories();
+
+    void addCategory(Category category);
+
+    void updateCategory(Category category);
+
+    void deleteCategory(Long id);
 }
