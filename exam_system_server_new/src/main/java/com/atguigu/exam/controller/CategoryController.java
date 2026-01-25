@@ -19,6 +19,7 @@ import java.util.List;
 @Slf4j
 @RestController  // REST控制器，返回JSON数据
 @RequestMapping("/api/categories")  // 分类API路径前缀
+@CrossOrigin//解决跨域问题
 @Tag(name = "分类管理", description = "题目分类相关操作，包括分类的增删改查、树形结构管理等功能")  // Swagger API分组
 public class CategoryController {
 
