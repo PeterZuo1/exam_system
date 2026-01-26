@@ -73,7 +73,10 @@ public class QuestionController {
             QuestionQueryVo questionQueryVo) {
         // 返回统一格式的成功响应
         Page<Question> questionPage = new Page<>(page, size);
-        questionService.questionListPage(questionPage, questionQueryVo);
+        //嵌套查询
+        //questionService.questionListPage(questionPage, questionQueryVo);
+        //使用java代码查询,分步查询
+        questionService.questionListPageStream(questionPage, questionQueryVo);
         log.info("分页查询成功，结果为：{}", questionPage);
         return Result.success(questionPage);
     }

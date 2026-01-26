@@ -34,4 +34,6 @@ public interface QuestionService extends IService<Question> {
 
 
     void questionListPage(Page<Question> questionPage, QuestionQueryVo questionQueryVo);
+
+    void questionListPageStream(Page<Question> questionPage, QuestionQueryVo questionQueryVo);
 }
