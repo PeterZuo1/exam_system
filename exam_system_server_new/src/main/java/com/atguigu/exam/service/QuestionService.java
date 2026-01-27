@@ -38,4 +38,6 @@ public interface QuestionService extends IService<Question> {
     void questionListPageStream(Page<Question> questionPage, QuestionQueryVo questionQueryVo);
 
     Question getQuestionById(Long id);
+
+    Question createQuestion(Question question);
 }

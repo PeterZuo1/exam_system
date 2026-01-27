@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
@@ -121,6 +122,50 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         }).start();
         return question;
     }
+
+    /**
+     * 创建题目
+     * @param question
+     * @return
+     */
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Question createQuestion(Question question) {
+        LambdaQueryWrapper<Question> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Question::getTitle, question.getTitle());
+        queryWrapper.eq(Question::getType, question.getType());
+        long count = count(queryWrapper);
+        if(count > 0){
+            throw new RuntimeException("已存在相同标题的题目");
+        }
+        //保存问题
+        save(question);
+        QuestionAnswer questionAnswer = new QuestionAnswer();
+        if(question.getType().equals("CHOICE")){
+            List<QuestionChoice> choices = question.getChoices();
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int i=0;i<choices.size();i++){
+                QuestionChoice choice = choices.get(i);
+                choice.setSort(i);
+                choice.setQuestionId(question.getId());
+                //保存选项
+                questionChoiceMapper.insert(choice);
+                //拼接答案
+                if(choice.getIsCorrect()){
+                    if(stringBuilder.length() > 0){
+                        stringBuilder.append(",");
+                    }
+                    //拼接正确答案
+                    stringBuilder.append((char) ('A'+i));
+                }
+            }
+            questionAnswer.setAnswer(stringBuilder.toString());
+            questionAnswer.setQuestionId(question.getId());
+            questionAnswerMapper.insert(questionAnswer);
+        }
+        return question;
+    }
+
     /**
      * 热门题目存储到Redis中
      * @param questionId
