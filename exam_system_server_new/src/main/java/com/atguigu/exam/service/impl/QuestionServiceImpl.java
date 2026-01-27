@@ -1,9 +1,11 @@
 package com.atguigu.exam.service.impl;
 
 import com.atguigu.exam.common.CacheConstants;
+import com.atguigu.exam.entity.PaperQuestion;
 import com.atguigu.exam.entity.Question;
 import com.atguigu.exam.entity.QuestionAnswer;
 import com.atguigu.exam.entity.QuestionChoice;
+import com.atguigu.exam.mapper.PaperQuestionMapper;
 import com.atguigu.exam.mapper.QuestionAnswerMapper;
 import com.atguigu.exam.mapper.QuestionChoiceMapper;
 import com.atguigu.exam.mapper.QuestionMapper;
@@ -37,6 +39,8 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     private QuestionChoiceMapper questionChoiceMapper;
     @Autowired
     private QuestionAnswerMapper questionAnswerMapper;
+    @Autowired
+    private PaperQuestionMapper paperQuestionMapper;
     @Autowired
     private RedisUtils redisUtils;// Redis操作工具类
     @Override
@@ -80,7 +84,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
             if("CHOICE".equals(question.getType())){
                 //排序
                 List<QuestionChoice> questionChoices1 = longQuestionChoiceMap.get(question.getId());
-                if(!ObjectUtils.isNotEmpty(questionChoices1)) {
+                if(!ObjectUtils.isEmpty(questionChoices1)) {
                     questionChoices1.sort(Comparator.comparing(QuestionChoice::getSort));
                     //赋值
                     question.setChoices(questionChoices1);
@@ -121,6 +125,16 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
             incrementQuestionScore(question.getId());
         }).start();
         return question;
+    }
+    /**
+     * 热门题目存储到Redis中
+     * @param questionId
+     * @return
+     */
+    private void incrementQuestionScore(Long questionId) {
+        //调用redis自定义工具类
+        redisUtils.zIncrementScore(CacheConstants.POPULAR_QUESTIONS_KEY,questionId, 1);
+        log.info("题目 {} 浏览次数加1", questionId);
     }
 
     /**
@@ -167,13 +181,62 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     }
 
     /**
-     * 热门题目存储到Redis中
-     * @param questionId
-     * @return
+     * 更新所有
+     * @param question
      */
-    private void incrementQuestionScore(Long questionId) {
-        //调用redis自定义工具类
-        redisUtils.zIncrementScore(CacheConstants.POPULAR_QUESTIONS_KEY,questionId, 1);
-        log.info("题目 {} 浏览次数加1", questionId);
+    @Transactional
+    @Override
+    public void updateAll(Question question) {
+        LambdaQueryWrapper<Question> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Question::getTitle, question.getTitle());
+        queryWrapper.eq(Question::getType, question.getType());
+        long count = count(queryWrapper);
+        if(count > 0){
+            throw new RuntimeException("已存在相同标题的题目");
+        }
+        //更新问题
+        updateById(question);
+        if(question.getType().equals("CHOICE")){
+            QuestionAnswer questionAnswer = new QuestionAnswer();
+            List<QuestionChoice> choices = question.getChoices();
+            //删除原来的选项
+            questionChoiceMapper.delete(new LambdaQueryWrapper<QuestionChoice>().eq(QuestionChoice::getQuestionId, question.getId()));
+            //存放答案
+            StringBuilder stringBuilder = new StringBuilder();
+            for(int i=0;i<choices.size();i++){
+                QuestionChoice questionChoice = choices.get(i);
+                questionChoice.setSort(i);
+                if(questionChoice.getIsCorrect()){
+                    if(stringBuilder.length()>0)
+                        stringBuilder.append(",");
+                    stringBuilder.append(questionChoice.getContent());
+                }
+                questionAnswer.setAnswer(stringBuilder.toString());
+                questionAnswer.setQuestionId(question.getId());
+                //更新答案
+                questionAnswerMapper.updateById(questionAnswer);
+                //新增选项
+                questionChoiceMapper.insert(questionChoice);
+            }
+        }
     }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void removeQuestion(Long id) {
+        //判断是否题目在试卷中
+        LambdaQueryWrapper<PaperQuestion> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(PaperQuestion::getQuestionId,id);
+        Long count = paperQuestionMapper.selectCount(queryWrapper);
+        if (count > 0){
+            throw new RuntimeException("该题目：%s 被试卷表中引用%s次，删除失败！".formatted(id,count));
+        }
+        //删除答案
+        questionAnswerMapper.delete(new LambdaQueryWrapper<QuestionAnswer>().eq(QuestionAnswer::getQuestionId, id));
+        //删除选项
+        questionChoiceMapper.delete(new LambdaQueryWrapper<QuestionChoice>().eq(QuestionChoice::getQuestionId, id));
+        //删除问题
+        questionMapper.deleteById(id);
+    }
+
 }
