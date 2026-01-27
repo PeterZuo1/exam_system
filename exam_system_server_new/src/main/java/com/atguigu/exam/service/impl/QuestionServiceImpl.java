@@ -1,5 +1,6 @@
 package com.atguigu.exam.service.impl;
 
+import com.atguigu.exam.common.CacheConstants;
 import com.atguigu.exam.entity.Question;
 import com.atguigu.exam.entity.QuestionAnswer;
 import com.atguigu.exam.entity.QuestionChoice;
@@ -7,6 +8,7 @@ import com.atguigu.exam.mapper.QuestionAnswerMapper;
 import com.atguigu.exam.mapper.QuestionChoiceMapper;
 import com.atguigu.exam.mapper.QuestionMapper;
 import com.atguigu.exam.service.QuestionService;
+import com.atguigu.exam.utils.RedisUtils;
 import com.atguigu.exam.vo.QuestionQueryVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -34,6 +36,8 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     private QuestionChoiceMapper questionChoiceMapper;
     @Autowired
     private QuestionAnswerMapper questionAnswerMapper;
+    @Autowired
+    private RedisUtils redisUtils;// Redis操作工具类
     @Override
     public void questionListPage(Page<Question> questionPage, QuestionQueryVo questionQueryVo) {
         questionMapper.selectPageByQuestionQueryVo(questionPage, questionQueryVo);
@@ -82,5 +86,49 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 }
             }
         });
+    }
+
+    @Override
+    public Question getQuestionById(Long id) {
+        Question question = questionMapper.selectById(id);
+        if (question== null){
+            throw new RuntimeException("查询结果为空");
+        }
+        //查询所有选项
+        LambdaQueryWrapper<QuestionChoice> choiceLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        choiceLambdaQueryWrapper.eq(QuestionChoice::getQuestionId, question.getId());
+        //选项
+        if (question.getType().equals("CHOICE")){
+            List<QuestionChoice> questionChoices = questionChoiceMapper.selectList(new LambdaQueryWrapper<QuestionChoice>().eq(QuestionChoice::getQuestionId, question.getId()));
+            //题目赋值选项
+            question.setChoices(questionChoices);
+        }
+        //查询所有答案
+        LambdaQueryWrapper<QuestionAnswer> answerLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        answerLambdaQueryWrapper.eq(QuestionAnswer::getQuestionId, question.getId());
+        QuestionAnswer questionAnswer = questionAnswerMapper.selectOne(answerLambdaQueryWrapper);
+        question.setAnswer(questionAnswer);
+        //开启线程
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//
+//            }
+//        })
+        //省略写法
+        new Thread(() -> {
+            incrementQuestionScore(question.getId());
+        }).start();
+        return question;
+    }
+    /**
+     * 热门题目存储到Redis中
+     * @param questionId
+     * @return
+     */
+    private void incrementQuestionScore(Long questionId) {
+        //调用redis自定义工具类
+        redisUtils.zIncrementScore(CacheConstants.POPULAR_QUESTIONS_KEY,questionId, 1);
+        log.info("题目 {} 浏览次数加1", questionId);
     }
 }
