@@ -44,4 +44,6 @@ public interface QuestionService extends IService<Question> {
     void updateAll(Question question);
 
     void removeQuestion(Long id);
+
+    List<Question> customFindPopularQuestions(Integer size);
 }

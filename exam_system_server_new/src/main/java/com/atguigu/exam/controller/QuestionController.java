@@ -262,8 +262,10 @@ public class QuestionController {
     public Result<List<Question>> getPopularQuestions(
             @Parameter(description = "返回题目数量", example = "10") @RequestParam(defaultValue = "10") Integer size) {
 
+        List<Question> questionList =  questionService.customFindPopularQuestions(size);
+        log.info("查询热门题目接口调用成功！热门题目数量：{},具体数据集合为：{}",questionList.size(),questionList);
         // 异常处理：记录日志并返回友好的错误信息
-        return Result.error("获取热门题目失败");
+        return Result.success(questionList);
 
     }
 

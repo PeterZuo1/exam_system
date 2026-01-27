@@ -21,9 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -63,8 +61,13 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
             log.info("分页查询结果为空");
             return;
         }
+        addChoiceAndAnswer(questionPage.getRecords());
+    }
+
+    //提取公共赋值方法
+    private void addChoiceAndAnswer(List<Question> questions) {
         //获取题目ID列表
-        List<Long> questinoIds = questionPage.getRecords().stream().map(Question::getId).collect(Collectors.toList());
+        List<Long> questinoIds = questions.stream().map(Question::getId).collect(Collectors.toList());
         //查询所有选项
         LambdaQueryWrapper<QuestionChoice> choiceLambdaQueryWrapper = new LambdaQueryWrapper<>();
         choiceLambdaQueryWrapper.in(QuestionChoice::getQuestionId, questinoIds);
@@ -77,7 +80,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         Map<Long, QuestionAnswer> longQuestionAnswerMap = questionAnswers.stream().collect(Collectors.toMap(QuestionAnswer::getQuestionId, c -> c));
         //题目选项转换格式
         Map<Long, List<QuestionChoice>> longQuestionChoiceMap = questionChoices.stream().collect(Collectors.groupingBy(QuestionChoice::getQuestionId));
-        questionPage.getRecords().forEach(question -> {
+        questions.forEach(question -> {
             //赋值答案
             question.setAnswer(longQuestionAnswerMap.get(question.getId()));
             //赋值选项(只有选择题有选项)
@@ -237,6 +240,40 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         questionChoiceMapper.delete(new LambdaQueryWrapper<QuestionChoice>().eq(QuestionChoice::getQuestionId, id));
         //删除问题
         questionMapper.deleteById(id);
+    }
+
+    @Override
+    public List<Question> customFindPopularQuestions(Integer size) {
+        ArrayList<Question> questions = new ArrayList<>();
+        //查询redis中的热门题目
+        Set<Object> qs = redisUtils.zReverseRange(CacheConstants.POPULAR_QUESTIONS_KEY, 0, size - 1);
+        if(!qs.isEmpty()){
+            List<Long> collect = qs.stream().map(q -> Long.valueOf(q.toString())).collect(Collectors.toList());
+            for (Long questionId : collect){
+                Question question = questionMapper.selectById(questionId);
+                if(question != null)
+                    questions.add(question);
+            }
+        }
+        //剩余热门题目数量
+        int diff=size-questions.size();
+        if(diff>0){
+            LambdaQueryWrapper<Question> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.orderByDesc(Question::getCreateTime);
+            //查询已有热门id
+            List<Long> questionIds = questions.stream().map(Question::getId).collect(Collectors.toList());
+            //不为空，排除已有的
+            if(!ObjectUtils.isEmpty(questionIds)){
+                queryWrapper.notIn(Question::getId, questionIds);
+            }
+            //切割
+            queryWrapper.last("limit "+diff);
+            List<Question> questions1 = questionMapper.selectList(queryWrapper);
+            //拼接
+            questions.addAll(questions1);
+        }
+        addChoiceAndAnswer(questions);
+        return questions;
     }
 
 }
