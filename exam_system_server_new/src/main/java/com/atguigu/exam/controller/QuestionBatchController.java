@@ -98,8 +98,9 @@ public class QuestionBatchController {
     @PostMapping("/import-questions")  // 处理POST请求
     @Operation(summary = "批量导入题目", description = "将题目列表批量导入到数据库，支持Excel解析后的导入或AI生成后的确认导入")  // API描述
     public Result<String> importQuestions(@RequestBody List<QuestionImportVo> questions) {
-
-       return Result.error("批量导入题目失败!" );
+        String result =questionService.importQuestions(questions);
+        log.info("批量导入题目成功！");
+       return Result.success(result,"批量导入题目成功!" );
 
     }
     

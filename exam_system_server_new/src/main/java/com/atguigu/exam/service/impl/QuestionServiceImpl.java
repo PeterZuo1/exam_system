@@ -19,6 +19,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -298,6 +299,60 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         //工具类预览文件
         List<QuestionImportVo> questionImportVos = ExcelUtil.parseExcel(file);
         return questionImportVos;
+    }
+
+    /**
+     * 批量导入题目
+     * @param questions
+     * @return
+     */
+    @Override
+    public String importQuestions(List<QuestionImportVo> questions) {
+        //判断题目是否为空
+        if(questions.isEmpty()){
+            return "题目为空!";
+        }
+        //导入成功的题目数量
+        int successCount = 0;
+        for(QuestionImportVo questionImportVo : questions){
+            try{
+                Question question = new Question();
+                //赋值相同属性
+                BeanUtils.copyProperties(questionImportVo, question);
+                //如果是选择题，添加选项
+                if("CHOICE".equals(question.getType())){
+                    //赋值
+                    ArrayList<QuestionChoice> questionChoices = new ArrayList<>(questionImportVo.getChoices().size());
+                    for(QuestionImportVo.ChoiceImportDto choiceImportDto : questionImportVo.getChoices()){
+                        QuestionChoice questionChoice = new QuestionChoice();
+                        questionChoice.setContent(choiceImportDto.getContent());
+                        questionChoice.setSort(choiceImportDto.getSort());
+                        questionChoice.setIsCorrect(choiceImportDto.getIsCorrect());
+                        questionChoices.add(questionChoice);
+                    }
+                    question.setChoices(questionChoices);
+                }
+                //添加答案
+                QuestionAnswer questionAnswer = new QuestionAnswer();
+                //判断题，需要将true和false转成大写！ 否则无法识别！！
+                if ("JUDGE".equals(questionImportVo.getType())){
+                    questionAnswer.setAnswer(questionImportVo.getAnswer().toUpperCase());
+                }else{
+                    questionAnswer.setAnswer(questionImportVo.getAnswer());
+                }
+                questionAnswer.setKeywords(questionImportVo.getKeywords());
+                question.setAnswer(questionAnswer);
+                //执行保存题目
+                createQuestion(question);
+                //增加成功保存
+                successCount++;
+            }
+            catch (Exception e){
+                log.error("导入题目失败：{}", questionImportVo.getTitle());
+            }
+        }
+        String result = "批量导入题目接口调用成功！ 一共：%s 题目需要导入，成功导入了：%s 道题！".formatted(questions.size(),successCount);
+        return result;
     }
 
 }
