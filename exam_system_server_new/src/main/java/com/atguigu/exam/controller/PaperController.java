@@ -95,7 +95,9 @@ public class PaperController {
     @GetMapping("/{id}")  // 处理GET请求
     @Operation(summary = "获取试卷详情", description = "获取试卷的详细信息，包括试卷基本信息和包含的所有题目")  // API描述
     public Result<Paper> getPaperById(@Parameter(description = "试卷ID") @PathVariable Integer id) {
-        return Result.success(null);
+        Paper paper = paperService.getPaperById(id);
+        log.info("获取试卷详情成功，试卷ID为{}", id);
+        return Result.success(paper);
     }
 
     /**

@@ -14,6 +14,7 @@ import com.atguigu.exam.vo.AiPaperVo;
 import com.atguigu.exam.vo.PaperVo;
 import com.atguigu.exam.vo.RuleVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -179,5 +180,28 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
         removeById(id);
         //删除中间表
         paperQuestionService.remove(new LambdaQueryWrapper<PaperQuestion>().eq(PaperQuestion::getPaperId, id));
+    }
+
+    @Override
+    public Paper getPaperById(Integer id) {
+        Paper paper = getById(id);
+        //查询题目
+        List<Question> questions = questionMapper.selectQuestionByPaperId(id);
+        //进行题目排序,选择题，填空题，简答题
+        questions.sort((o1, o2) -> Integer.compare(toScore(o1.getType()),toScore(o2.getType())));
+        paper.setQuestions(questions);
+        return paper;
+    }
+    private int toScore(String type){
+        switch (type) {
+            case "CHOICE":
+                return 0;
+            case "JUDGE":
+                return 1;
+            case "TEXT":
+                return 2;
+            default:
+                return 3;
+        }
     }
 }

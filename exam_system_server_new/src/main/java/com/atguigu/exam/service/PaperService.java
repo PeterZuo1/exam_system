@@ -37,4 +37,11 @@ public interface PaperService extends IService<Paper> {
      * @param id
      */
     void deletePaper(Integer id);
+
+    /**
+     * 根据ID获取试卷信息
+     * @param id
+     * @return
+     */
+    Paper getPaperById(Integer id);
 }
