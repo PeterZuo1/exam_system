@@ -5,13 +5,18 @@ import com.atguigu.exam.entity.Paper;
 import com.atguigu.exam.service.PaperService;
 import com.atguigu.exam.vo.AiPaperVo;
 import com.atguigu.exam.vo.PaperVo;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 试卷控制器 - 处理试卷管理相关的HTTP请求
@@ -19,11 +24,14 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController  // REST控制器，返回JSON数据
 @RequestMapping("/api/papers")  // 试卷API路径前缀
+@CrossOrigin
+@Slf4j
 @Tag(name = "试卷管理", description = "试卷相关操作，包括创建、查询、更新、删除，以及AI智能组卷功能")  // Swagger API分组
 public class PaperController {
 
 
-
+    @Autowired
+    private PaperService paperService;
     /**
      * 获取所有试卷列表（支持模糊搜索和状态筛选）
      */
@@ -32,8 +40,12 @@ public class PaperController {
     public Result<java.util.List<Paper>> listPapers(
             @Parameter(description = "试卷名称，支持模糊查询") @RequestParam(required = false) String name,
             @Parameter(description = "试卷状态，可选值：DRAFT/PUBLISHED/STOPPED") @RequestParam(required = false) String status) {
-
-        return Result.success(null);
+        LambdaQueryWrapper<Paper> paperLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        paperLambdaQueryWrapper.like(!ObjectUtils.isEmpty(name), Paper::getName, name);
+        paperLambdaQueryWrapper.eq(!ObjectUtils.isEmpty(status), Paper::getStatus, status);
+        List<Paper> list = paperService.list(paperLambdaQueryWrapper);
+        log.info("获取试卷列表成功，共有{}个试卷", list.size());
+        return Result.success(list);
     }
 
     /**
