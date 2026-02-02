@@ -23,4 +23,12 @@ public interface PaperService extends IService<Paper> {
      * @return 创建的试卷对象
      */
     Paper createPaperWithAI(AiPaperVo aiPaperVo);
+
+    /**
+     * 更新试卷信息
+     * @param id
+     * @param paperVo
+     * @return
+     */
+    Paper updatePaper(Integer id, PaperVo paperVo);
 }

@@ -126,4 +126,37 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
         updateById(paper);
         return paper;
     }
+
+    @Transactional
+    @Override
+    public Paper updatePaper(Integer id, PaperVo paperVo) {
+        Paper paper = getById(id);
+        //校验试卷状态
+        if(paper.getStatus().equals("PUBLISHED")){
+            throw new RuntimeException("试卷已发布，不能修改");
+        }
+        //修改名字校验
+        LambdaQueryWrapper<Paper> paperLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        paperLambdaQueryWrapper.eq(Paper::getName, paperVo.getName());
+        paperLambdaQueryWrapper.ne(Paper::getId, id);
+        long count = count(paperLambdaQueryWrapper);
+        if(count>0){
+            throw new RuntimeException("试卷名称已存在");
+        }
+        //赋值
+        BeanUtils.copyProperties(paperVo, paper);
+        //计算总分和题目数量
+        paper.setQuestionCount(paperVo.getQuestions().size());
+        Optional<BigDecimal> reduce = paperVo.getQuestions().values().stream().reduce(BigDecimal::add);
+        paper.setTotalScore(reduce.get());
+        //更新
+        updateById(paper);
+        //更新中间表，先删除在添加
+        paperQuestionService.remove(new LambdaQueryWrapper<PaperQuestion>().eq(PaperQuestion::getPaperId, id));
+        List<PaperQuestion> paperQuestions = paperVo.getQuestions().entrySet().stream()
+                .map(e -> new PaperQuestion(id, Long.valueOf(e.getKey()), e.getValue()))
+                .collect(Collectors.toList());
+        paperQuestionService.saveBatch(paperQuestions);
+        return paper;
+    }
 }

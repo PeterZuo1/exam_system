@@ -70,7 +70,9 @@ public class PaperController {
     public Result<Paper> updatePaper(
             @Parameter(description = "试卷ID") @PathVariable Integer id, 
             @RequestBody PaperVo paperVo) {
-        return Result.success(null, "试卷更新成功");
+        Paper paper = paperService.updatePaper(id, paperVo);
+        log.info("更新试卷成功，试卷ID为{}", paper.getId());
+        return Result.success(paper, "试卷更新成功");
     }
 
     /**
