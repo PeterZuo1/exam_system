@@ -1,6 +1,7 @@
 package com.atguigu.exam.service;
 
 import com.atguigu.exam.entity.Paper;
+import com.atguigu.exam.vo.AiPaperVo;
 import com.atguigu.exam.vo.PaperVo;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -15,4 +16,11 @@ public interface PaperService extends IService<Paper> {
      * @return 创建的试卷对象
      */
     Paper createPaper(PaperVo paperVo);
+
+    /**
+     * 使用AI自动生成试卷
+     * @param aiPaperVo 试卷信息
+     * @return 创建的试卷对象
+     */
+    Paper createPaperWithAI(AiPaperVo aiPaperVo);
 }
