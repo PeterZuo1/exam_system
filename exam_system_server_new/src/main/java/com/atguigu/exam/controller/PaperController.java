@@ -7,6 +7,7 @@ import com.atguigu.exam.vo.AiPaperVo;
 import com.atguigu.exam.vo.PaperVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -108,6 +109,11 @@ public class PaperController {
     public Result<Void> updatePaperStatus(
             @Parameter(description = "试卷ID") @PathVariable Integer id, 
             @Parameter(description = "新的状态，可选值：PUBLISHED/STOPPED") @RequestParam String status) {
+        LambdaUpdateWrapper<Paper> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        lambdaUpdateWrapper.eq(Paper::getId, id);
+        lambdaUpdateWrapper.set(Paper::getStatus, status);
+        paperService.update(lambdaUpdateWrapper);
+        log.info("更新试卷状态成功，试卷ID为{}，新的状态为{}", id, status);
         return Result.success(null, "状态更新成功");
     }
 
@@ -120,7 +126,7 @@ public class PaperController {
     @Operation(summary = "删除试卷", description = "删除指定的试卷，注意：已发布的试卷不能删除")  // API描述
     public Result<Void> deletePaper(@Parameter(description = "试卷ID") @PathVariable Integer id) {
         // 检查试卷是否存在  // 验证试卷存在性
-
-        return Result.error("试卷删除失败");
+        paperService.deletePaper(id);
+        return Result.success("试卷删除成功");
     }
 } 

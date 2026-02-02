@@ -1,9 +1,11 @@
 package com.atguigu.exam.service.impl;
 
 
+import com.atguigu.exam.entity.ExamRecord;
 import com.atguigu.exam.entity.Paper;
 import com.atguigu.exam.entity.PaperQuestion;
 import com.atguigu.exam.entity.Question;
+import com.atguigu.exam.mapper.ExamRecordMapper;
 import com.atguigu.exam.mapper.PaperMapper;
 import com.atguigu.exam.mapper.QuestionMapper;
 import com.atguigu.exam.service.PaperQuestionService;
@@ -40,6 +42,8 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
     @Autowired
     private QuestionMapper questionMapper;
 
+    @Autowired
+    private ExamRecordMapper examRecordMapper;
     @Transactional
     @Override
     public Paper createPaper(PaperVo paperVo) {
@@ -158,5 +162,22 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
                 .collect(Collectors.toList());
         paperQuestionService.saveBatch(paperQuestions);
         return paper;
+    }
+
+    @Override
+    public void deletePaper(Integer id) {
+        Paper paper = getById(id);
+        if(paper.getStatus().equals("PUBLISHED")){
+            throw new RuntimeException("试卷已发布，不能删除");
+        }
+        Long count = examRecordMapper.selectCount(new LambdaQueryWrapper<ExamRecord>().eq(ExamRecord::getExamId, id));
+        //有考试记录
+        if(count>0){
+            throw new RuntimeException("试卷已考过，不能删除");
+        }
+        //删除试卷
+        removeById(id);
+        //删除中间表
+        paperQuestionService.remove(new LambdaQueryWrapper<PaperQuestion>().eq(PaperQuestion::getPaperId, id));
     }
 }
