@@ -1,6 +1,7 @@
 package com.atguigu.exam.service;
 
 import com.atguigu.exam.entity.Paper;
+import com.atguigu.exam.vo.PaperVo;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
@@ -8,4 +9,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface PaperService extends IService<Paper> {
 
-} 
+    /**
+     * 创建试卷
+     * @param paperVo 试卷信息
+     * @return 创建的试卷对象
+     */
+    Paper createPaper(PaperVo paperVo);
+}
