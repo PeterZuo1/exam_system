@@ -12,6 +12,18 @@ import java.util.List;
  */
 public interface ExamService extends IService<Exam> {
 
+    /**
+     * 开始考试
+     * @param startExamVo
+     * @return
+     */
     ExamRecord saveExam(StartExamVo startExamVo);
+
+    /**
+     * 获取考试详情
+     * @param id
+     * @return
+     */
+    ExamRecord customGetExamRecordById(Integer id);
 }
  
