@@ -21,8 +21,9 @@
         FROM exam_records er JOIN paper p ON
         er.exam_id=p.id
         <where>
+            er.is_deleted=0
             <if test="studentName != null and studentName != ''">
-                er.student_name LIKE CONCAT('%',#{studentName},'%')
+                and er.student_name LIKE CONCAT('%',#{studentName},'%')
             </if>
             <if test="status != null">
                 AND er.status=#{status}

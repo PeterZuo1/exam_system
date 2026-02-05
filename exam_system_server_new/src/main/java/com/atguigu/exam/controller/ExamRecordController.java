@@ -3,6 +3,7 @@ package com.atguigu.exam.controller;
 import com.atguigu.exam.common.Result;
 import com.atguigu.exam.entity.ExamRecord;
 import com.atguigu.exam.service.ExamRecordService;
+import com.atguigu.exam.service.ExamService;
 import com.atguigu.exam.vo.ExamRankingVO;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -31,6 +32,8 @@ public class ExamRecordController {
     @Autowired
     private ExamRecordService examRecordService;
 
+    @Autowired
+    private ExamService examService;
     /**
      * 分页查询考试记录
      */
@@ -58,8 +61,9 @@ public class ExamRecordController {
     @Operation(summary = "获取考试记录详情", description = "根据记录ID获取考试记录的详细信息，包括试卷内容和答题情况")  // API描述
     public Result<ExamRecord> getExamRecordById(
             @Parameter(description = "考试记录ID") @PathVariable Integer id) {
-
-        return Result.success(null);
+        ExamRecord examRecord = examService.customGetExamRecordById(id);
+        log.info("获取考试记录详情成功，结果：{}", examRecord);
+        return Result.success(examRecord);
     }
 
     /**
@@ -69,8 +73,9 @@ public class ExamRecordController {
     @Operation(summary = "删除考试记录", description = "根据ID删除指定的考试记录")  // API描述
     public Result<Void> deleteExamRecord(
             @Parameter(description = "考试记录ID") @PathVariable Integer id) {
-
-         return Result.error("删除失败");
+        examRecordService.customRemoveById( id);
+        log.info("删除考试记录成功");
+         return Result.success("删除成功！");
     }
 
     /**
