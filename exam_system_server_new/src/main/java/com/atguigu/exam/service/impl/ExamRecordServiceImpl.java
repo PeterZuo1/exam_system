@@ -4,8 +4,13 @@ import com.atguigu.exam.entity.ExamRecord;
 import com.atguigu.exam.mapper.ExamRecordMapper;
 import com.atguigu.exam.service.ExamRecordService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.List;
 
@@ -14,7 +19,23 @@ import java.util.List;
  * 实现考试记录相关的业务逻辑
  */
 @Service
+@Slf4j
 public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> implements ExamRecordService {
-    
 
-} 
+    @Autowired
+    private ExamRecordMapper examRecordMapper;
+    @Override
+    public void pageList(Page<ExamRecord> examRecordPage, String studentName, Integer status, String startDate, String endDate) {
+        String statusText = null;
+        if (status != null) {
+            switch (status) {
+                case 0: statusText = "进行中"; break;
+                case 1: statusText = "已完成"; break;
+                case 2: statusText = "已批阅"; break;
+            }
+        }
+        //查询
+        IPage<ExamRecord> pageExamRecords = examRecordMapper.getPageExamRecords(examRecordPage, studentName, statusText, startDate, endDate);
+        log.info("分页查询考试记录成功，结果：{}", pageExamRecords);
+    }
+}

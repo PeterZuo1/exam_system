@@ -3,4 +3,36 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.atguigu.exam.mapper.ExamRecordMapper">
+
+    <resultMap id="listExamRecord" type="com.atguigu.exam.entity.ExamRecord">
+        <id property="id" column="id"/>
+        <association property="paper" javaType="com.atguigu.exam.entity.Paper">
+            <id property="id" column="p_id"/>
+            <result column="p_status" property="status"/>
+            <result column="p_create_time" property="createTime"/>
+            <result column="p_update_time" property="updateTime"/>
+            <result column="p_deleted" property="isDeleted"/>
+        </association>
+    </resultMap>
+    <select id="getPageExamRecords" resultMap="listExamRecord">
+        SELECT
+        er.*,p.id p_id,p.name,p.description,p.status p_status,p.total_score,p.question_count,p.duration,
+        p.create_time p_create_time,p.update_time p_update_time,p.is_deleted p_deleted
+        FROM exam_records er JOIN paper p ON
+        er.exam_id=p.id
+        <where>
+            <if test="studentName != null and studentName != ''">
+                er.student_name LIKE CONCAT('%',#{studentName},'%')
+            </if>
+            <if test="status != null">
+                AND er.status=#{status}
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND er.start_time >= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND er.end_time &lt;= #{endDate}
+            </if>
+        </where>
+    </select>
 </mapper>

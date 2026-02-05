@@ -3,7 +3,10 @@ package com.atguigu.exam.mapper;
 
 import com.atguigu.exam.entity.ExamRecord;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 /**
  * @description 针对表【exam_record(考试记录表)】的数据库操作Mapper
@@ -13,4 +16,5 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface ExamRecordMapper extends BaseMapper<ExamRecord> {
 
+    public IPage<ExamRecord> getPageExamRecords(IPage<ExamRecord> page,String studentName, String status, String startDate, String endDate);
 } 
