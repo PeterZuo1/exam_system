@@ -93,7 +93,8 @@ public class ExamRecordController {
             @Parameter(description = "显示数量限制，可选，不传则返回所有记录") @RequestParam(required = false) Integer limit
     ) {
         // 使用优化的查询方法，避免N+1查询问题
-
-        return Result.success(null);
+        List<ExamRankingVO> examRankingList = examRecordService.getExamRanking(paperId, limit);
+        log.info("获取考试排行榜成功，结果：{}", examRankingList);
+        return Result.success(examRankingList);
     }
 } 

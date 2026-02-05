@@ -1,6 +1,7 @@
 package com.atguigu.exam.service;
 
 import com.atguigu.exam.entity.ExamRecord;
+import com.atguigu.exam.vo.ExamRankingVO;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -31,4 +32,13 @@ public interface ExamRecordService extends IService<ExamRecord> {
      * @param id 考试记录ID
      */
     void customRemoveById(Integer id);
+
+    /**
+     * 获取考试排行榜
+     *
+     * @param paperId  试卷ID
+     * @param limit    显示数量限制
+     * @return 考试排行榜列表
+     */
+    List<ExamRankingVO> getExamRanking(Integer paperId, Integer limit);
 }

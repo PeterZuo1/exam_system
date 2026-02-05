@@ -36,4 +36,22 @@
             </if>
         </where>
     </select>
+    <select id="getExamRanking" resultType="com.atguigu.exam.vo.ExamRankingVO">
+        select
+        er.*,
+        pr.`name` paper_name ,
+        pr. total_score paper_total_score,
+        TIMESTAMPDIFF(MINUTE, er.start_time, er.end_time) duration
+        from exam_records er left join paper pr
+        on er.exam_id = pr.id
+        where er.is_deleted = 0 and pr.is_deleted = 0
+        and er.`status` = '已批阅'
+        <if test="paperId != null">
+            and pr.id=#{paperId}
+        </if>
+        order by er.score desc , duration asc
+        <if test="limit != null">
+            limit #{limit};
+        </if>
+    </select>
 </mapper>

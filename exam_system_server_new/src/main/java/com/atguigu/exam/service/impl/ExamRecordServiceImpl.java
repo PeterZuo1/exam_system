@@ -5,6 +5,7 @@ import com.atguigu.exam.entity.ExamRecord;
 import com.atguigu.exam.mapper.AnswerRecordMapper;
 import com.atguigu.exam.mapper.ExamRecordMapper;
 import com.atguigu.exam.service.ExamRecordService;
+import com.atguigu.exam.vo.ExamRankingVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -59,5 +60,13 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
         removeById(id);
         //删除子表答题记录表
         answerRecordMapper.delete(new LambdaQueryWrapper<AnswerRecord>().eq(AnswerRecord::getExamRecordId, id));
+    }
+
+    @Override
+    public List<ExamRankingVO> getExamRanking(Integer paperId, Integer limit) {
+        //获取排行榜集合
+        List<ExamRankingVO> examRanking = examRecordMapper.getExamRanking(paperId, limit);
+        log.info("获取考试排行榜成功，结果：{}", examRanking);
+        return examRanking;
     }
 }
